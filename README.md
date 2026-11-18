@@ -1,6 +1,6 @@
 <p align="center"><img src="frontend/public/falcon-eye-banner.jpg" alt="Falcon Eye - AI Agent Firewall" width="720"></p>
 
-# Falcon Eye  Multi-User AI Agent Firewall
+# Falcon Eye | Multi-User AI Agent Firewall
 
 **Powerful security. Simple experience.**
 
