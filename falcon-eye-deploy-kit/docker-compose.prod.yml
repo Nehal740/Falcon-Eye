@@ -1,0 +1,62 @@
+# Falcon Eye - PRODUCTION stack with automatic HTTPS (Caddy).
+#   docker compose -f docker-compose.prod.yml --env-file .env up --build -d
+# Only Caddy is reachable from the internet (ports 80/443). The database,
+# backend and frontend containers have no published ports.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-falconeye}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-falconeye}
+    volumes:
+      - falconeye_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      ENVIRONMENT: production
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-falconeye}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-falconeye}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in .env}
+      CORS_ORIGINS: https://${DOMAIN:?Set DOMAIN in .env}
+      COOKIE_SECURE: "true"
+      ENABLE_API_DOCS: ${ENABLE_API_DOCS:-false}
+      TRUST_PROXY: "true"   # reachable only through Caddy -> nginx
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN in .env}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+
+volumes:
+  falconeye_pgdata:
+  caddy_data:
+  caddy_config:

@@ -34,6 +34,7 @@ button {
 
 .app-shell {
   min-height: 100vh;
+  background: #f6f8fc;
 }
 
 /* =========================================
