@@ -15,6 +15,7 @@ jobs:
           cache: pip
       - run: pip install -r requirements-dev.txt
       - run: python -m pytest
+      - run: python scripts/evaluate_firewall.py   # fails if any unsafe ALLOW appears
 
   frontend:
     runs-on: ubuntu-latest

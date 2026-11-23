@@ -34,7 +34,7 @@ button {
 
 .app-shell {
   min-height: 100vh;
-  background: #f6f8fc;
+  background: #f6f8fc; /* the loading splash in index.html sets a dark body colour */
 }
 
 /* =========================================

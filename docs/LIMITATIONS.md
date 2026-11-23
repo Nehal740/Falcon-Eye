@@ -15,3 +15,5 @@ Read these before relying on Falcon Eye:
 - **Tests.** See the testing notes in the project README for what has and has not been run.
 
 Ideas for later: Redis rate limiting, email invitations and password reset, two-factor authentication, notifications and webhooks, execution integrations, policy import and export, workspace deletion.
+
+- **Email is optional and unconfirmed addresses can still sign in.** Without SMTP settings, password reset by email is unavailable (an administrator would have to reset the account in the database). See `docs/EMAIL.md`.

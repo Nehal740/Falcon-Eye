@@ -266,3 +266,9 @@ tr.clickable { cursor: pointer; } tr.clickable:hover td { background: #f8faff; }
   .assistant-panel { right: 8px; left: 8px; width: auto; bottom: 72px; }
 }
 @media (max-width: 480px) { .stats-grid.six { grid-template-columns: 1fr; } .onboard-foot { flex-direction: column-reverse; align-items: stretch; } .foot-right { justify-content: stretch; } }
+
+/* Email: forgot password link and the "confirm your email" banner */
+.auth-forgot { background: none; border: 0; padding: 0; margin-top: 8px; color: #69a1ff; font-size: 12px; font-weight: 700; cursor: pointer; text-align: left; }
+.auth-forgot:hover { text-decoration: underline; }
+.verify-banner { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 18px; padding: 11px 14px; border-radius: 10px; background: #fff7e0; border: 1px solid #f0d58a; color: #6b4e00; font-size: 13px; }
+.verify-actions { display: flex; gap: 8px; }

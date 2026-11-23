@@ -20,6 +20,11 @@ Falcon Eye reads settings from environment variables. For local use copy `.env.e
 | `LLM_PROVIDER` | `anthropic` | `anthropic` or `openai` (also OpenAI-compatible servers). |
 | `LLM_API_KEY` | none | Enables generated assistant answers. Without it the assistant shows documentation passages. Kept on the server only. |
 | `LLM_MODEL`, `LLM_BASE_URL` | `claude-sonnet-5-5`, provider default | Model name and optional custom endpoint. |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_SECURITY` | none, `587`, none, none, `starttls` | Mail server for welcome emails, email confirmation and password reset. `SMTP_SECURITY` is `starttls` (port 587), `ssl` (port 465) or `none`. Without `SMTP_HOST` no email is sent. See `docs/EMAIL.md`. |
+| `EMAIL_FROM`, `EMAIL_REPLY_TO` | none | Sender shown to people, e.g. `Falcon Eye <no-reply@yourdomain.com>`. `EMAIL_FROM` is required to send. |
+| `APP_BASE_URL` | first `CORS_ORIGINS` entry | Public web address used for links inside emails. Docker sets it automatically; set `https://your-domain` on a server. |
+| `RESET_TOKEN_MINUTES`, `VERIFY_TOKEN_HOURS` | `60`, `48` | How long reset and confirmation links work. |
+| `EMAIL_LOG_LINKS` | `false` | Development only: write emails (with their links) to the server log instead of sending. Refused in production. |
 | `DOCS_DIR` | `docs/` next to the backend | Folder of Markdown files the assistant searches. |
 | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | `falconeye`, none, `falconeye` | Used only by `docker-compose.yml`. |
 

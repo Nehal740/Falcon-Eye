@@ -32,3 +32,9 @@ The type is inferred from whole words in the action name, for example `send_exte
 | Block one folder, allow the rest of file access | Policy A (priority 1): BLOCK, type *file access*, resource `/finance/*`. Policy B (priority 10): ALLOW, type *file access* |
 
 Start from a template, then try your own examples in the tester before relying on a policy.
+
+## Built-in safeguards (added after testing)
+- **Compound actions are never auto-allowed.** An action name that joins steps, such as `read_file_and_delete_everything`, cannot be ALLOWed by a rule like `read_*`; it needs a human (REQUIRE_APPROVAL). A rule that BLOCKs still blocks.
+- **Starter policies block sensitive resources** (for example `/etc/shadow`, `.ssh`, `.env`, names containing `credential`, `secret` or `password`, `.pem`/`.key` files) whatever the action is called. Policies created before this change keep their old rules; create a new policy from the template to get them.
+- **Known over-blocking:** category detection is keyword based, so a harmless name such as `search_api_docs` is treated as an external API call and needs approval. This errs on the safe side.
+- Run `python scripts/evaluate_firewall.py` to measure the decisions on a labelled test set (results in `docs/EVALUATION.md`).

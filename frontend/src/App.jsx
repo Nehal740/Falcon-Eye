@@ -6,6 +6,7 @@ import {
 import { api, getToken, onAuthLost, refreshIfNeeded, setToken } from './api';
 import { useFetch } from './hooks';
 import Auth from './Auth';
+import { ResetPassword, VerifyBanner, VerifyEmail } from './EmailActions';
 import Assistant from './components/Assistant';
 import { Dialog, ErrorBox, Field, InlineError, ROLE_LABEL, ToastProvider, useToast } from './components/ui';
 import Dashboard from './pages/Dashboard';
@@ -30,6 +31,12 @@ const PAGE_COMPONENT = { overview: Dashboard, agents: Agents, policies: Policies
 function readPage() {
   const p = window.location.hash.replace(/^#\/?/, '');
   return PAGES[p] ? p : 'overview';
+}
+// Links in emails look like  /#/reset-password?token=...  or  /#/verify-email?token=...
+function readEmailRoute() {
+  const [name, query = ''] = window.location.hash.replace(/^#\/?/, '').split('?');
+  if (name !== 'reset-password' && name !== 'verify-email') return null;
+  return { name, token: new URLSearchParams(query).get('token') || '' };
 }
 function readWs() { try { return localStorage.getItem(WS_KEY); } catch { return null; } }
 function writeWs(id) { try { localStorage.setItem(WS_KEY, String(id)); } catch { /* ignore */ } }
@@ -181,6 +188,7 @@ function Shell({ me, reloadMe, onLogout }) {
         </header>
 
         <div className="page-content">
+          {me.email_available && me.user.email_verified === false && <VerifyBanner email={me.user.email} />}
           <div className="page-heading">
             <div>
               <div className="eyebrow">{ws.name.toUpperCase()}</div>
@@ -224,6 +232,17 @@ function Session({ onLogout, notice }) {
 export default function App() {
   const [token, setTokenState] = useState(getToken);
   const [notice, setNotice] = useState('');
+  const [emailRoute, setEmailRoute] = useState(readEmailRoute);
+
+  // Remove the one-time token from the address bar as soon as it has been read.
+  useEffect(() => {
+    if (emailRoute) window.history.replaceState(null, '', window.location.pathname + window.location.search);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const on = () => { const r = readEmailRoute(); if (r) { setEmailRoute(r); window.history.replaceState(null, '', window.location.pathname + window.location.search); } };
+    window.addEventListener('hashchange', on);
+    return () => window.removeEventListener('hashchange', on);
+  }, []);
 
   useEffect(() => {
     onAuthLost(() => { setTokenState(null); setNotice('Your session expired. Please sign in again.'); });
@@ -236,6 +255,21 @@ export default function App() {
     setNotice('You have been signed out.');
     setTokenState(null);
   }, []);
+
+  const finishEmailRoute = (opts = {}) => {
+    if (opts.signedOut) { setToken(null); setTokenState(null); setNotice('Password changed. Please sign in.'); }
+    setEmailRoute(null);
+  };
+
+  if (emailRoute) {
+    return (
+      <ToastProvider>
+        {emailRoute.name === 'reset-password'
+          ? <ResetPassword token={emailRoute.token} onDone={finishEmailRoute} />
+          : <VerifyEmail token={emailRoute.token} onDone={finishEmailRoute} />}
+      </ToastProvider>
+    );
+  }
 
   return (
     <ToastProvider>

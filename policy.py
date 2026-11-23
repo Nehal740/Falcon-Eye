@@ -26,6 +26,7 @@ The engine decides; it never performs the action itself.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from fnmatch import fnmatchcase
 from typing import Iterable, Literal
@@ -75,6 +76,15 @@ _MESSAGES = {
     "BLOCK": "Blocked by your security policy.",
     "REQUIRE_APPROVAL": "A human must approve this action first.",
 }
+
+
+# "read_file_and_delete_everything" starts like a harmless read but does two
+# things. Compound actions are never auto-allowed (see evaluate()).
+_COMPOUND = re.compile(r"(?:^|[^a-z0-9])(?:and|then)(?:[^a-z0-9]|$)|[;&|]", re.IGNORECASE)
+
+
+def is_compound(action: str) -> bool:
+    return bool(_COMPOUND.search(action or ""))
 
 
 def _glob(pattern: str, value: str) -> bool:
@@ -143,6 +153,18 @@ def evaluate(
         )
 
     _, policy, rule = best
+    if rule.effect == "ALLOW" and is_compound(action):
+        return Verdict(
+            decision="REQUIRE_APPROVAL",
+            message=_MESSAGES["REQUIRE_APPROVAL"],
+            reason="This action name combines several steps (for example "
+                   "'read_x_and_delete_y'). Combined actions are never allowed "
+                   "automatically, so a human must approve it.",
+            category=category,
+            policy_id=policy.id,
+            policy_name=policy.name,
+            rule_id=rule.id,
+        )
     target = (f"category '{rule.target_value}'" if rule.target_type == "category"
               else f"action pattern '{rule.target_value}'")
     scope = "" if (rule.resource_pattern or "*") == "*" else f" on resources like '{rule.resource_pattern}'"

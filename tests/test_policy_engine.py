@@ -123,3 +123,30 @@ def test_all_templates_are_valid():
         assert t["rules"]
         for r in t["rules"]:
             assert r["effect"] in ("ALLOW", "BLOCK", "REQUIRE_APPROVAL")
+
+
+# ---- hardening found by scripts/evaluate_firewall.py
+
+def test_compound_action_is_never_auto_allowed():
+    v = evaluate("read_file_and_delete_everything", "", [template_policy()])
+    assert v.decision == "REQUIRE_APPROVAL"
+    assert "several steps" in v.reason
+
+
+def test_compound_action_does_not_weaken_a_block():
+    assert evaluate("delete_file_and_read_x", "", [template_policy()]).decision == "BLOCK"
+
+
+def test_ordinary_names_with_and_inside_a_word_are_not_compound():
+    # 'candidate' and 'thenceforth' contain the letters but are not separate words
+    assert evaluate("read_candidate_list", "", [template_policy()]).decision == "ALLOW"
+
+
+def test_starter_policy_blocks_sensitive_resources_for_any_action():
+    for resource in ("/etc/shadow", "../../.ssh/id_rsa", ".env", "prod/credentials.json",
+                     "C:\\Windows\\System32\\config\\SAM"):
+        assert evaluate("read_file", resource, [template_policy()]).decision == "BLOCK", resource
+
+
+def test_normal_resource_is_still_allowed():
+    assert evaluate("read_file", "docs/readme.md", [template_policy()]).decision == "ALLOW"

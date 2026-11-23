@@ -67,6 +67,23 @@ class Settings:
         self.llm_base_url = _env("LLM_BASE_URL")
         self.docs_dir = _env("DOCS_DIR")
 
+        # Email (optional). Without SMTP_HOST, Falcon Eye sends no email and
+        # password reset by email is unavailable.
+        self.smtp_host = _env("SMTP_HOST")
+        self.smtp_port = _int("SMTP_PORT", 587)
+        self.smtp_user = _env("SMTP_USER")
+        self.smtp_password = _env("SMTP_PASSWORD")
+        self.smtp_security = (_env("SMTP_SECURITY", "starttls") or "starttls").lower()  # starttls | ssl | none
+        self.email_from = _env("EMAIL_FROM")          # e.g. Falcon Eye <no-reply@yourdomain.com>
+        self.email_reply_to = _env("EMAIL_REPLY_TO")
+        # Public address of the web app, used for links inside emails.
+        self.app_base_url = (_env("APP_BASE_URL") or (self.cors_origins[0] if self.cors_origins else "http://localhost:5173")).rstrip("/")
+        self.reset_token_minutes = _int("RESET_TOKEN_MINUTES", 60)
+        self.verify_token_hours = _int("VERIFY_TOKEN_HOURS", 48)
+        # Development helper: print email links in the server log instead of sending.
+        # Never enable on a public server: the links give access to accounts.
+        self.email_log_links = _bool("EMAIL_LOG_LINKS", False)
+
         self._resolve_secrets()
 
     def _resolve_secrets(self) -> None:
@@ -96,11 +113,24 @@ class Settings:
             problems.append("DATABASE_URL must be set.")
         if "*" in self.cors_origins:
             problems.append("CORS_ORIGINS must not contain '*'.")
+        if self.email_log_links:
+            problems.append("EMAIL_LOG_LINKS must be false in production (it writes login links to the log).")
+        if self.smtp_host and not self.email_from:
+            problems.append("EMAIL_FROM must be set when SMTP_HOST is set.")
         if not self.cookie_secure:
             # Not fatal (the web app signs in with a bearer token), but it
             # should be fixed as soon as you serve Falcon Eye over HTTPS.
             logger.warning("COOKIE_SECURE is false. Set COOKIE_SECURE=true when serving over HTTPS.")
         return problems
+
+    @property
+    def email_enabled(self) -> bool:
+        return bool(self.smtp_host and self.email_from)
+
+    @property
+    def email_available(self) -> bool:
+        """True when a message can be delivered (or, for developers, logged)."""
+        return self.email_enabled or self.email_log_links
 
     @property
     def llm_enabled(self) -> bool:

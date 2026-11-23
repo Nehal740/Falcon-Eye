@@ -14,7 +14,10 @@ export default function Auth({ onAuthed, notice }) {
   const [show, setShow] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState('');
   const isLogin = mode === 'login';
+  const isForgot = mode === 'forgot';
+  const isRegister = mode === 'register';
 
   const longEnough = password.length >= 10;
   const mixed = /[A-Za-z]/.test(password) && /[0-9]/.test(password);
@@ -22,12 +25,17 @@ export default function Auth({ onAuthed, notice }) {
   async function submit(e) {
     e.preventDefault();
     setError(null);
-    if (!isLogin && !longEnough) {
+    if (isRegister && !longEnough) {
       setError({ message: 'Your password needs at least 10 characters.', hint: 'Try a short sentence, for example three random words.', fields: { password: 'At least 10 characters.' } });
       return;
     }
     setLoading(true);
     try {
+      if (isForgot) {
+        const data = await api.post('/auth/forgot-password', { email }, { auth: false });
+        setSent(data.message);
+        return;
+      }
       const body = isLogin ? { email, password } : { full_name: fullName, email, password };
       const data = await api.post(isLogin ? '/auth/login' : '/auth/register', body, { auth: false });
       onAuthed(data.access_token);
@@ -62,14 +70,16 @@ export default function Auth({ onAuthed, notice }) {
         </div>
 
         <div className="auth-heading">
-          <h1>{isLogin ? 'Welcome back' : 'Create your account'}</h1>
-          <p>{isLogin ? 'Sign in to your security workspace.' : 'You will get your own private workspace right away.'}</p>
+          <h1>{isForgot ? 'Reset your password' : isLogin ? 'Welcome back' : 'Create your account'}</h1>
+          <p>{isForgot ? 'Enter your email address and we will send you a link to choose a new password.'
+            : isLogin ? 'Sign in to your security workspace.' : 'You will get your own private workspace right away.'}</p>
         </div>
 
         {notice && <div className="auth-info" role="status">{notice}</div>}
+        {sent && <div className="auth-info" role="status">{sent}</div>}
 
-        <form onSubmit={submit} className="auth-form" noValidate>
-          {!isLogin && (
+        {!sent && <form onSubmit={submit} className="auth-form" noValidate>
+          {isRegister && (
             <div className="auth-field">
               <label htmlFor="fullName">Full name</label>
               <input id="fullName" className="auth-input" value={fullName} onChange={(e) => setFullName(e.target.value)}
@@ -83,7 +93,7 @@ export default function Auth({ onAuthed, notice }) {
               placeholder="you@example.com" required autoComplete="email" aria-invalid={!!fields.email} />
             {fields.email && <small className="auth-field-error">{fields.email}</small>}
           </div>
-          <div className="auth-field">
+          {!isForgot && <div className="auth-field">
             <label htmlFor="password">Password</label>
             <div className="pw-wrap">
               <input id="password" className="auth-input" type={show ? 'text' : 'password'} value={password}
@@ -94,13 +104,18 @@ export default function Auth({ onAuthed, notice }) {
               </button>
             </div>
             {fields.password && <small className="auth-field-error">{fields.password}</small>}
-            {!isLogin && (
+            {isRegister && (
               <ul className="pw-rules">
                 <Rule ok={longEnough}>At least 10 characters</Rule>
                 <Rule ok={mixed}>Letters and numbers (recommended)</Rule>
               </ul>
             )}
-          </div>
+            {isLogin && (
+              <button type="button" className="auth-forgot" onClick={() => { setMode('forgot'); setError(null); }}>
+                Forgot password?
+              </button>
+            )}
+          </div>}
 
           {error && (
             <div className="auth-error" role="alert">
@@ -110,14 +125,14 @@ export default function Auth({ onAuthed, notice }) {
           )}
 
           <button className="auth-submit" type="submit" disabled={loading}>
-            {loading ? 'Please wait…' : isLogin ? 'Sign in to Falcon Eye' : 'Create account'}
+            {loading ? 'Please wait…' : isForgot ? 'Send reset link' : isLogin ? 'Sign in to Falcon Eye' : 'Create account'}
           </button>
-        </form>
+        </form>}
 
         <div className="auth-switch">
-          {isLogin ? 'New to Falcon Eye?' : 'Already have an account?'}
-          <button type="button" onClick={() => { setMode(isLogin ? 'register' : 'login'); setError(null); }}>
-            {isLogin ? 'Create an account' : 'Sign in'}
+          {isForgot ? 'Remembered it?' : isLogin ? 'New to Falcon Eye?' : 'Already have an account?'}
+          <button type="button" onClick={() => { setMode(isForgot || !isLogin ? 'login' : 'register'); setError(null); setSent(''); }}>
+            {isForgot || !isLogin ? 'Sign in' : 'Create an account'}
           </button>
         </div>
         <div className="auth-security"><Lock size={11} /> Passwords are hashed. Sessions expire automatically.</div>

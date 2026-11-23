@@ -28,6 +28,7 @@ services:
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in .env}
       CORS_ORIGINS: https://${DOMAIN:?Set DOMAIN in .env}
       COOKIE_SECURE: "true"
+      APP_BASE_URL: https://${DOMAIN}   # links inside emails
       ENABLE_API_DOCS: ${ENABLE_API_DOCS:-false}
       TRUST_PROXY: "true"   # reachable only through Caddy -> nginx
     depends_on:

@@ -42,6 +42,10 @@ Common codes: `401 not_signed_in`, `401 invalid_agent_key`, `403 not_allowed`, `
 | `GET` | `/auth/me` | Who am I, and which workspaces can I use? | signed-in user |
 | `POST` | `/auth/onboarding/complete` | Mark the first-time guide as finished | signed-in user |
 | `POST` | `/auth/change-password` | Change your password | signed-in user |
+| `POST` | `/auth/forgot-password` | Email a password reset link (same answer whether or not the address has an account) | public |
+| `POST` | `/auth/reset-password` | Set a new password using the emailed one-time token | public |
+| `POST` | `/auth/verify-email` | Confirm your email address using the emailed one-time token | public |
+| `POST` | `/auth/resend-verification` | Send the confirmation email again | signed-in user |
 
 ### Workspaces and members
 

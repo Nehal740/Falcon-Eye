@@ -101,6 +101,18 @@ def _rule(target_type, target_value, effect, resource="*"):
     }
 
 
+# Resources that no starter policy lets an agent touch, whatever the action is called.
+_SENSITIVE_RESOURCES = [
+    "*/etc/shadow*", "*/etc/passwd*", "*.ssh*", "*id_rsa*", "*.env", "*.env.*",
+    "*credential*", "*secret*", "*password*", "*.pem", "*.pfx", "*.key",
+    "*system32?config?sam*",   # Windows SAM file; ? matches the backslash
+]
+
+
+def _sensitive_resource_rules() -> list[dict]:
+    return [_rule("action", "*", "BLOCK", pattern) for pattern in _SENSITIVE_RESOURCES]
+
+
 POLICY_TEMPLATES: list[dict] = [
     {
         "id": "recommended",
@@ -110,6 +122,7 @@ POLICY_TEMPLATES: list[dict] = [
         "priority": 100,
         "rules": [
             _rule("category", "sensitive_data", "BLOCK"),
+            *_sensitive_resource_rules(),
             _rule("action", "delete_*", "BLOCK"),
             _rule("category", "external_email", "REQUIRE_APPROVAL"),
             _rule("category", "data_export", "REQUIRE_APPROVAL"),
@@ -128,6 +141,7 @@ POLICY_TEMPLATES: list[dict] = [
         "priority": 100,
         "rules": [
             _rule("category", "sensitive_data", "BLOCK"),
+            *_sensitive_resource_rules(),
             _rule("action", "delete_*", "BLOCK"),
             _rule("action", "*", "REQUIRE_APPROVAL"),
         ],
@@ -139,6 +153,7 @@ POLICY_TEMPLATES: list[dict] = [
         "priority": 100,
         "rules": [
             _rule("category", "sensitive_data", "BLOCK"),
+            *_sensitive_resource_rules(),
             _rule("action", "read_*", "ALLOW"),
             _rule("action", "search_*", "ALLOW"),
             _rule("action", "*", "BLOCK"),

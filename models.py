@@ -56,6 +56,7 @@ class User(Base):
     token_valid_after = Column(DateTime(timezone=True))
     onboarding_completed = Column(Boolean, nullable=False, default=False,
                                   server_default=expression.false())
+    email_verified_at = Column(DateTime(timezone=True))
 
 
 class Workspace(Base):
@@ -80,6 +81,22 @@ class WorkspaceMember(Base):
     workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     role = Column(String(20), nullable=False, default="member")  # owner/admin/member/viewer
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+
+
+class EmailToken(Base):
+    """One-time links sent by email (confirm address, reset password).
+
+    Only a SHA-256 hash of the token is stored, so a database leak cannot be
+    used to take over accounts. A token works once and expires."""
+    __tablename__ = "email_tokens"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    purpose = Column(String(30), nullable=False)  # verify_email | reset_password
+    token_hash = Column(String(64), nullable=False, unique=True, index=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    used_at = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True), default=utcnow)
 
 
