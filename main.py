@@ -17,7 +17,8 @@ from database import get_db
 from errors import AppError, error_response, register_error_handlers
 from migrations import init_db
 from routers import (
-    agents, approvals, assistant, auth, dashboard, events, firewall, policies, workspaces,
+    agents, approvals, assistant, auth, dashboard, events, firewall, policies, verify,
+    workspaces,
 )
 
 logging.basicConfig(level=logging.INFO,
@@ -41,6 +42,7 @@ TAGS = [
     {"name": "Authentication", "description": "Create an account, sign in and out."},
     {"name": "Workspaces", "description": "Workspaces, members, audit log and assistant settings."},
     {"name": "Agents", "description": "Register agents and manage their keys."},
+    {"name": "Output verification", "description": "Check agent output and tool calls for injection, secrets and unsupported claims."},
     {"name": "Policies", "description": "Rules that decide what agents may do."},
     {"name": "Events", "description": "The record of every firewall decision."},
     {"name": "Approvals", "description": "Human review of sensitive actions."},
@@ -106,7 +108,7 @@ async def protect(request: Request, call_next):
     return response
 
 
-for module in (auth, workspaces, agents, policies, firewall, events, approvals,
+for module in (auth, workspaces, agents, policies, firewall, verify, events, approvals,
                dashboard, assistant):
     app.include_router(module.router)
 

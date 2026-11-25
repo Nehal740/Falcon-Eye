@@ -88,6 +88,10 @@ class Settings:
         # Firewall
         self.agent_rate_limit_per_minute = _int("AGENT_RATE_LIMIT_PER_MINUTE", 120)
         self.approval_ttl_hours = _int("APPROVAL_TTL_HOURS", 24)
+        # Output verification (/v1/verify). See docs/VERIFICATION.md
+        self.verify_enabled = _bool("VERIFY_ENABLED", True)
+        sens = (_env("VERIFY_SENSITIVITY") or "standard").strip().lower()
+        self.verify_sensitivity = sens if sens in ("standard", "strict") else "standard"
         self.agent_connected_minutes = _int("AGENT_CONNECTED_MINUTES", 15)
 
         # AI support assistant (optional)

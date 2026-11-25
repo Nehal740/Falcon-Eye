@@ -150,3 +150,8 @@ Response:
 `executed` is always `false`: Falcon Eye makes a decision and records it. Your agent performs (or skips) the action itself.
 
 When `decision` is `REQUIRE_APPROVAL`, poll `GET /v1/approvals/{approval_id}` until `status` is `APPROVED`, `REJECTED` or `EXPIRED`.
+
+
+## POST /v1/verify (agent key)
+
+Checks an output or tool call before use. See `docs/VERIFICATION.md`. `GET /workspaces/{id}/verifications` (viewer+) lists results (names and counts only).

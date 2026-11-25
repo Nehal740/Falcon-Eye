@@ -10,3 +10,6 @@ __pycache__/
 dist/
 .vscode/
 reports/
+falcon-eye-update-*/
+falcon-eye-update-*.zip
+tmp*/

@@ -50,15 +50,15 @@ prompt or reply, so several LLM risks can only be handled where the agent itself
 
 | # | Risk | Falcon Eye's position | Status |
 |---|---|---|---|
-| LLM01 | Prompt injection | Cannot detect injected text in agents it does not see. It limits the damage: a hijacked agent still cannot do anything the policy blocks or holds for approval. The built-in support assistant treats stored records as untrusted data and has no tools. **No injection classifier exists.** | ◑ |
-| LLM02 | Sensitive information disclosure | Sensitive file/credential resource rules block secret paths; assistant never receives API keys; secrets are not logged. No scanning of agent output for secrets. | ◑ |
+| LLM01 | Prompt injection | Cannot detect injected text in agents it does not see. It limits the damage: a hijacked agent still cannot do anything the policy blocks or holds for approval. The built-in support assistant treats stored records as untrusted data and has no tools. Optional `/v1/verify` adds pattern-based injection signals (not a classifier, will miss novel attacks). | ◑ |
+| LLM02 | Sensitive information disclosure | Sensitive file/credential resource rules block secret paths; assistant never receives API keys; secrets are not logged. `/v1/verify` scans agent output and tool arguments for secret patterns and redacts them. | ◑ |
 | LLM03 | Supply chain | `pip-audit` / `npm audit`; AI provider is chosen by the admin | ◑ |
 | LLM04 | Data / model poisoning | Policy changes versioned and audited. No model training in Falcon Eye. | ◑ |
 | LLM05 | Improper output handling | Assistant output rendered as text, never as HTML (no `dangerouslySetInnerHTML`). Agent action names are validated and compound actions need approval. | ✅ |
 | LLM06 | Excessive agency | **Core purpose**: default deny, BLOCK / REQUIRE_APPROVAL, sensitive-resource rules, human approval. | ✅ |
 | LLM07 | System prompt leakage | The assistant's prompt holds no secrets. Test asks it to reveal keys. | ✅ |
 | LLM08 | Vector / embedding weaknesses | No vector database (`retrieval.py` is keyword search over the docs). | ➖ |
-| LLM09 | Misinformation / hallucination | **Not implemented.** Falcon Eye contains the *impact* of a wrong action; it does not judge whether agent text is true. Planned for Stage 2 as an optional `/v1/verify` check. | ❌ |
+| LLM09 | Misinformation / hallucination | Partial. `/v1/verify` compares an agent's output with **evidence the agent supplies** and with Falcon Eye's own records, then flags, holds or blocks. It does not know facts by itself and does not eliminate hallucinations. See `docs/VERIFICATION.md`. | ◑ |
 | LLM10 | Unbounded consumption | Agent rate limit, assistant answer-length limit, request caps | ◑ |
 
 ## ASVS (reference areas, no level claimed)
@@ -81,7 +81,7 @@ prompt or reply, so several LLM risks can only be handled where the agent itself
 3. Move token out of `localStorage` (HttpOnly cookie + CSRF protection) – larger change.
 4. Pin Python dependencies with a lock file.
 5. Alerting for repeated failed logins / blocked agents.
-6. Stage 2: `/v1/verify` hallucination checks and optional prompt-injection signals.
+6. Verification: per-workspace settings, dashboard panel, agent SDK helper, optional semantic (model-based) checker.
 
 ## Scan results (local Docker copy)
 

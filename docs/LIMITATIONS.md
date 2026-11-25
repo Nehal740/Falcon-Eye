@@ -17,3 +17,8 @@ Read these before relying on Falcon Eye:
 Ideas for later: Redis rate limiting, email invitations and password reset, two-factor authentication, notifications and webhooks, execution integrations, policy import and export, workspace deletion.
 
 - **Email is optional and unconfirmed addresses can still sign in.** Without SMTP settings, password reset by email is unavailable (an administrator would have to reset the account in the database). See `docs/EMAIL.md`.
+
+
+## Output verification
+
+Verification is heuristic. It checks text against evidence the agent supplies; it cannot know facts itself, will miss novel injection wording, and can flag correct text. Settings are server-wide, and there is no dashboard panel yet. See `docs/VERIFICATION.md`.

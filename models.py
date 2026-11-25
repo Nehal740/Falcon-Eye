@@ -233,6 +233,31 @@ class FirewallEvent(Base):
     source_ip = Column(String(64))
 
 
+class Verification(Base):
+    """One output check made through /v1/verify. Stores signal NAMES and counts only,
+    never the checked text itself (only its SHA-256 hash and length)."""
+    __tablename__ = "verifications"
+    __table_args__ = (Index("ix_verifications_workspace_created", "workspace_id", "created_at"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    verification_id = Column(String, unique=True, index=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=False)
+    agent_pk = Column(Integer)
+    agent_id = Column(String(64))
+    agent_name = Column(String(80))
+    kind = Column(String(20))
+    status = Column(String(30))
+    risk_level = Column(String(10), index=True)
+    decision = Column(String(20))
+    flagged = Column(Boolean, default=False)
+    signal_codes = Column(Text)        # JSON list of signal names
+    counts = Column(Text)              # JSON: claims checked / unsupported / contradicted
+    text_sha256 = Column(String(64))
+    text_length = Column(Integer)
+    event_id = Column(String)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+
+
 class ApprovalRequest(Base):
     __tablename__ = "approval_requests"
     __table_args__ = (Index("ix_approvals_workspace_status", "workspace_id", "status"),)

@@ -272,3 +272,55 @@ class ChatMessage(BaseModel):
 class AssistantIn(BaseModel):
     message: str = Field(min_length=1, max_length=1500)
     history: list[ChatMessage] = Field(default_factory=list, max_length=12)
+
+
+# ---------------------------------------------------------------- output verification
+
+class EvidenceIn(BaseModel):
+    id: str = Field(min_length=1, max_length=64, pattern=r"^[A-Za-z0-9_.:\-]+$")
+    text: str = Field(min_length=1, max_length=5000)
+    source: str | None = Field(default=None, max_length=200)
+
+
+class ToolCallIn(BaseModel):
+    action: str = Field(min_length=1, max_length=100)
+    resource: str = Field(default="", max_length=500)
+    arguments: dict | None = None
+
+    @field_validator("action")
+    @classmethod
+    def _action(cls, v: str) -> str:
+        v = v.strip()
+        if not _ACTION.match(v):
+            raise ValueError("Use only letters, numbers and _ . : / - characters.")
+        return v
+
+    @field_validator("arguments")
+    @classmethod
+    def _arguments(cls, v: dict | None) -> dict | None:
+        if v is not None and len(json.dumps(v, default=str)) > 4096:
+            raise ValueError("Arguments must be 4 KB or smaller.")
+        return v
+
+
+class ReportedActionIn(BaseModel):
+    action: str = Field(min_length=1, max_length=100)
+    resource: str = Field(default="", max_length=500)
+
+
+class VerifyIn(BaseModel):
+    """What an agent sends to have its output checked before it is used."""
+    text: str = Field(min_length=1, max_length=20000, description="The output to check")
+    kind: Literal["response", "tool_call", "report"] = "response"
+    evidence: list[EvidenceIn] = Field(default_factory=list, max_length=20)
+    tool_call: ToolCallIn | None = None
+    reported_actions: list[ReportedActionIn] = Field(default_factory=list, max_length=20)
+    known_endpoints: list[str] | None = Field(default=None, max_length=100)
+    consequential: bool = False
+
+    @field_validator("known_endpoints")
+    @classmethod
+    def _eps(cls, v):
+        if v and any(len(x) > 200 for x in v):
+            raise ValueError("Each endpoint must be 200 characters or fewer.")
+        return v

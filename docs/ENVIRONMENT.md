@@ -30,3 +30,11 @@ Falcon Eye reads settings from environment variables. For local use copy `.env.e
 | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | `falconeye`, none, `falconeye` | Used only by `docker-compose.yml`. |
 
 Generate a secret: `python -c "import secrets;print(secrets.token_urlsafe(48))"`.
+
+
+## Output verification
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `VERIFY_ENABLED` | `true` | Turns `/v1/verify` on or off |
+| `VERIFY_SENSITIVITY` | `standard` | `strict` also holds medium-risk consequential outputs for approval |
