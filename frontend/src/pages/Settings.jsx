@@ -145,12 +145,50 @@ function AuditSection({ ctx }) {
   );
 }
 
+function AiSection({ ctx }) {
+  const { ws } = ctx;
+  const [busy, setBusy] = useState(false);
+  const [res, setRes] = useState(null);
+  const [err, setErr] = useState(null);
+  async function run() {
+    setBusy(true); setErr(null); setRes(null);
+    try { setRes(await api.get(`/workspaces/${ws.id}/assistant/diagnose`)); }
+    catch (x) { setErr(x); } finally { setBusy(false); }
+  }
+  return (
+    <section className="panel settings-sec">
+      <div className="panel-head"><div><h2>AI assistant</h2><p>Check that the live AI model is connected and answering.</p></div></div>
+      <div className="stack">
+        <div className="btn-row"><button className="primary-btn" onClick={run} disabled={busy}>{busy ? 'Testing…' : 'Test AI connection'}</button></div>
+        <InlineError error={err} />
+        {res && (
+          <>
+            <Notice tone={res.ok ? 'ok' : 'warn'}>
+              <b>{res.ok ? 'Connected.' : 'Not working yet.'}</b> {res.next_step}
+              {res.test && !res.test.ok && <div>Reason: {res.test.message}{res.test.detail ? ` — the provider says: “${res.test.detail}”` : ''}</div>}
+              {res.test && res.test.ok && <div>Test answer: “{res.test.sample}”</div>}
+            </Notice>
+            <ul className="notes">
+              <li>Provider: <span className="mono">{res.provider}</span> · Model in use: <span className="mono">{res.model}</span></li>
+              {res.list_error && <li>Model list: could not load ({res.list_error})</li>}
+              {res.models.length > 0 && <li>Models your key can use: <span className="mono">{res.models.join(', ')}</span></li>}
+              {res.suggested_model && !res.ok && <li>Suggested setting: <span className="mono">LLM_MODEL={res.suggested_model}</span></li>}
+            </ul>
+            <small>Settings live in the server’s <span className="mono">.env</span> file (see docs/AI_ASSISTANT.md). The key is never shown here.</small>
+          </>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export default function Settings({ ctx }) {
   return (
     <div className="settings-grid">
       <WorkspaceSection ctx={ctx} />
       <MembersSection ctx={ctx} />
       <PasswordSection ctx={ctx} />
+      {ctx.canWrite && <AiSection ctx={ctx} />}
       {ctx.canWrite && <AuditSection ctx={ctx} />}
       <section className="panel settings-sec">
         <div className="panel-head"><div><h2>Security notes</h2><p>How Falcon Eye protects your workspace</p></div></div>

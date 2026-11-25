@@ -1,0 +1,48 @@
+name: Security
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 5 * * 1"   # every Monday
+  workflow_dispatch:
+
+jobs:
+  static-and-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13", cache: pip }
+      - run: pip install -r requirements-dev.txt -r requirements-security.txt
+      - name: Security regression tests
+        run: python -m pytest tests/test_security_owasp.py -v
+      - name: Bandit (medium+ severity fails the build)
+        run: python -m bandit -r . -x ./tests,./frontend,./legacy_backup -ll
+      - name: pip-audit
+        run: python -m pip_audit -r requirements.txt
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: npm audit (production dependencies)
+        run: npm audit --omit=dev --audit-level=high
+        working-directory: frontend
+
+  zap-baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start Falcon Eye with throw-away secrets
+        run: |
+          echo "JWT_SECRET_KEY=$(openssl rand -hex 32)" > .env
+          echo "POSTGRES_PASSWORD=$(openssl rand -hex 16)" >> .env
+          docker compose up -d --build
+          for i in $(seq 1 40); do curl -fs http://localhost:8080/api/health && break; sleep 3; done
+      - name: ZAP baseline scan (own test instance only)
+        run: |
+          mkdir -p reports && chmod 777 reports
+          docker run --rm --network host -v "$PWD/reports:/zap/wrk:rw" -v "$PWD/.zap:/zap/rules:ro" \
+            -t zaproxy/zap-stable zap-baseline.py -t http://localhost:8080 \
+            -c /zap/rules/rules.tsv -r zap-report.html -J zap-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: zap-report, path: reports/ }

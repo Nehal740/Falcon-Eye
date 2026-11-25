@@ -9,9 +9,4 @@ __pycache__/
 *.sqlite3
 dist/
 .vscode/
-
-legacy_backup/
-
-*.zip
-falcon-eye-update-*/
-falcon-eye-deploy-kit/
+reports/

@@ -272,3 +272,10 @@ tr.clickable { cursor: pointer; } tr.clickable:hover td { background: #f8faff; }
 .auth-forgot:hover { text-decoration: underline; }
 .verify-banner { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 18px; padding: 11px 14px; border-radius: 10px; background: #fff7e0; border: 1px solid #f0d58a; color: #6b4e00; font-size: 13px; }
 .verify-actions { display: flex; gap: 8px; }
+
+/* Assistant answers: tidy text instead of raw symbols */
+.chat-message .chat-text { white-space: normal; line-height: 1.55; }
+.rich p { margin: 0 0 8px; }
+.rich > :last-child { margin-bottom: 0; }
+.rich ol, .rich ul { margin: 4px 0 8px; padding-left: 20px; display: grid; gap: 4px; }
+.rich code { background: rgba(20, 30, 60, .09); padding: 1px 5px; border-radius: 4px; font-size: .92em; }

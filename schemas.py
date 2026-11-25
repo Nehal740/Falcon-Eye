@@ -264,7 +264,9 @@ class DecisionIn(BaseModel):
 
 class ChatMessage(BaseModel):
     role: Literal["user", "assistant"]
-    text: str = Field(max_length=2000)
+    # Earlier answers are sent back as context. Never reject a long one (the
+    # service shortens each to 1500 characters); the body size limit still applies.
+    text: str = Field(max_length=20000)
 
 
 class AssistantIn(BaseModel):

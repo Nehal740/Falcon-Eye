@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Bot, Send, X } from 'lucide-react';
+import RichText from './RichText';
 import { api, friendly } from '../api';
 import { useFetch } from '../hooks';
 
@@ -29,7 +30,7 @@ export default function Assistant({ ws, chat, setChat, onClose }) {
   async function send(text) {
     const q = text.trim();
     if (!q || busy) return;
-    const history = chat.filter((m) => !m.error).slice(-6).map((m) => ({ role: m.role, text: m.text }));
+    const history = chat.filter((m) => !m.error).slice(-6).map((m) => ({ role: m.role, text: m.text.slice(0, 1500) }));
     setChat((c) => [...c, { role: 'user', text: q }]);
     setInput(''); setBusy(true);
     try {
@@ -65,7 +66,7 @@ export default function Assistant({ ws, chat, setChat, onClose }) {
         )}
         {chat.map((m, i) => (
           <div key={i} className={`chat-message ${m.role} ${m.error ? 'error' : ''}`}>
-            <div className="chat-text">{m.text}</div>
+            <div className="chat-text">{m.role === 'assistant' && !m.error ? <RichText text={m.text} /> : m.text}</div>
             {m.role === 'assistant' && m.mode && <span className={`mode-badge ${m.mode === 'ai' ? 'llm' : 'docs_only'}`}>{m.mode === 'ai' ? 'AI answer' : 'From documentation'}</span>}
             {m.notice && <div className="chat-notice">{m.notice}</div>}
             {m.sources && m.sources.length > 0 && <div className="chat-sources">Sources: {m.sources.map((s) => s.title).join(', ')}</div>}

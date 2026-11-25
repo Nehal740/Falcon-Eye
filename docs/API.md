@@ -118,6 +118,7 @@ Common codes: `401 not_signed_in`, `401 invalid_agent_key`, `403 not_allowed`, `
 | Method | Path | What it does | Needs |
 |---|---|---|---|
 | `GET` | `/workspaces/{workspace_id}/assistant/status` | Is the live AI model connected? | viewer+ |
+| `GET` | `/workspaces/{workspace_id}/assistant/diagnose` | Test the AI connection: lists usable models and sends one small test question (the key is never returned) | admin+ |
 | `POST` | `/workspaces/{workspace_id}/assistant/chat` | Ask the support assistant | viewer+ |
 
 ### Service

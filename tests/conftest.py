@@ -6,6 +6,7 @@ in-memory SQLite database and never touch your real data.
 
 import os
 
+os.environ["FALCON_EYE_NO_DOTENV"] = "1"  # tests must never read your real .env
 os.environ.setdefault("ENVIRONMENT", "test")
 os.environ["DATABASE_URL"] = "sqlite://"  # in-memory
 os.environ["JWT_SECRET_KEY"] = "test-secret-key-that-is-long-enough-1234567890"

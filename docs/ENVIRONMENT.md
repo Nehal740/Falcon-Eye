@@ -1,6 +1,6 @@
 # Environment Configuration
 
-Falcon Eye reads settings from environment variables. For local use copy `.env.example` to `.env`. The backend loads real environment variables; with Docker Compose the `.env` file is passed in automatically. **Never commit `.env`.**
+Falcon Eye reads settings from environment variables. For local use copy `.env.example` to `.env`. When you run the backend directly (`python -m uvicorn main:app`) it reads the `.env` file in the project folder; with Docker Compose the `.env` file is passed in automatically. Real environment variables always win over `.env`; the automated tests ignore `.env` on purpose. **Never commit `.env`.**
 
 | Variable | Default | Purpose |
 |---|---|---|
@@ -19,6 +19,7 @@ Falcon Eye reads settings from environment variables. For local use copy `.env.e
 | `AGENT_CONNECTED_MINUTES` | `15` | An agent counts as "Connected" if seen within this time. |
 | `LLM_PROVIDER` | `anthropic` | `anthropic` or `openai` (also OpenAI-compatible servers). |
 | `LLM_API_KEY` | none | Enables generated assistant answers. Without it the assistant shows documentation passages. Kept on the server only. |
+| `LLM_MAX_TOKENS` | `1500` | Room for each answer. Some models use part of it for "thinking", so keep it generous. |
 | `LLM_MODEL`, `LLM_BASE_URL` | `claude-sonnet-5-5`, provider default | Model name and optional custom endpoint. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_SECURITY` | none, `587`, none, none, `starttls` | Mail server for welcome emails, email confirmation and password reset. `SMTP_SECURITY` is `starttls` (port 587), `ssl` (port 465) or `none`. Without `SMTP_HOST` no email is sent. See `docs/EMAIL.md`. |
 | `EMAIL_FROM`, `EMAIL_REPLY_TO` | none | Sender shown to people, e.g. `Falcon Eye <no-reply@yourdomain.com>`. `EMAIL_FROM` is required to send. |

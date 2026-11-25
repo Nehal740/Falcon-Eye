@@ -52,6 +52,17 @@ def status(ctx: WorkspaceContext = Depends(require_role("viewer")),
             "live_ai_configured": settings.llm_enabled}
 
 
+@router.get("/diagnose", summary="Test the AI connection (administrators)")
+def diagnose(ctx: WorkspaceContext = Depends(require_role("admin"))):
+    """Checks the key, lists usable models and sends one small test question.
+    The key itself is never returned."""
+    allowed, retry = limiter.hit(f"assistant-diagnose:{ctx.user.id}", 6, 60)
+    if not allowed:
+        raise AppError(429, "rate_limited", "Please wait a moment before testing again.",
+                       f"Try again in {retry} seconds.", headers={"Retry-After": str(retry)})
+    return svc.diagnose()
+
+
 @router.post("/chat", summary="Ask the support assistant")
 def chat(body: AssistantIn, ctx: WorkspaceContext = Depends(require_role("viewer")),
          db: Session = Depends(get_db)):
@@ -82,6 +93,7 @@ def chat(body: AssistantIn, ctx: WorkspaceContext = Depends(require_role("viewer
         answer = svc.docs_only_answer(results)
         notice = ("The live AI model is not connected, so this answer comes straight from "
                   "the Falcon Eye guides." if not settings.llm_enabled else
-                  f"The AI model could not be reached ({exc}). Showing the Falcon Eye guides instead.")
+                  f"The AI model could not answer: {exc}. Showing the Falcon Eye guides instead."
+                  + (" An administrator can run the AI connection test under Settings." if ctx.role in ("owner", "admin") else ""))
     return {"answer": answer, "mode": mode, "live_ai": mode == "ai",
             "sources": sources, "notice": notice}

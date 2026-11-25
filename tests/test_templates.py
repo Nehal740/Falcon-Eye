@@ -25,3 +25,9 @@ def test_windows_sam_file_is_still_blocked_by_the_starter_policy():
     policy = PolicyView(1, t["name"], t["priority"], None, True, rules)
     for resource in ("C:\\Windows\\System32\\config\\SAM", "c:/windows/system32/config/sam"):
         assert evaluate("read_file", resource, [policy], agent_pk=1).decision == "BLOCK"
+
+
+def test_long_earlier_answers_are_accepted_as_chat_history():
+    from schemas import AssistantIn
+    body = AssistantIn(message="hello", history=[{"role": "assistant", "text": "x" * 9000}])
+    assert len(body.history[0].text) == 9000

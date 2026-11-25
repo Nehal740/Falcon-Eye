@@ -11,6 +11,36 @@ import secrets
 logger = logging.getLogger("falcon_eye")
 
 
+def _load_dotenv(path: str | None = None) -> None:
+    """Read KEY=VALUE lines from the .env file next to this file.
+
+    Real environment variables always win (this is what Docker uses), so a
+    value set by the server is never overridden. Tests switch this off with
+    FALCON_EYE_NO_DOTENV=1 so they can never use your real keys.
+    """
+    if os.getenv("FALCON_EYE_NO_DOTENV"):
+        return
+    path = path or os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    try:
+        with open(path, encoding="utf-8-sig") as handle:
+            lines = handle.read().splitlines()
+    except OSError:
+        return
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key, value = key.strip(), value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+            value = value[1:-1]
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
+_load_dotenv()
+
+
 def _env(name: str, default: str | None = None) -> str | None:
     value = os.getenv(name)
     return value if value not in (None, "") else default
@@ -65,6 +95,8 @@ class Settings:
         self.llm_api_key = _env("LLM_API_KEY")
         self.llm_model = _env("LLM_MODEL", "claude-sonnet-5-5")
         self.llm_base_url = _env("LLM_BASE_URL")
+        # Room for the answer. Some models spend part of this on "thinking", so keep it generous.
+        self.llm_max_tokens = _int("LLM_MAX_TOKENS", 1500)
         self.docs_dir = _env("DOCS_DIR")
 
         # Email (optional). Without SMTP_HOST, Falcon Eye sends no email and

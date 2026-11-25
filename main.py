@@ -93,10 +93,16 @@ async def protect(request: Request, call_next):
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("X-Frame-Options", "DENY")
     response.headers.setdefault("Referrer-Policy", "no-referrer")
+    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    response.headers.setdefault("Cross-Origin-Resource-Policy", "same-site")
     if not request.url.path.startswith(("/docs", "/redoc", "/openapi")):
         response.headers.setdefault("Cache-Control", "no-store")
+        # The API only returns JSON, so it needs no scripts, styles or frames at all.
+        response.headers.setdefault("Content-Security-Policy",
+                                    "default-src 'none'; frame-ancestors 'none'")
     if settings.is_production:
-        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000")
+        response.headers.setdefault("Strict-Transport-Security",
+                                    "max-age=31536000; includeSubDomains")
     return response
 
 

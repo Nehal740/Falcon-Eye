@@ -14,3 +14,8 @@ will get an answer as soon as possible.
 - Agent keys are shown once and only a SHA-256 hash is stored.
 - Known limitations are listed in `docs/LIMITATIONS.md`. Falcon Eye has not
   had an independent security review.
+
+
+## OWASP alignment and testing
+
+See `docs/OWASP_COMPLIANCE_MATRIX.md` (what is and is not covered) and `docs/SECURITY_TESTING_GUIDE.md` (how to scan). Report vulnerabilities privately as described above.
