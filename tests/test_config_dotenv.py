@@ -38,3 +38,11 @@ def test_the_switch_turns_loading_off(tmp_path, monkeypatch):
 
 def test_missing_file_is_fine(tmp_path):
     config._load_dotenv(str(tmp_path / "nope.env"))
+
+
+def test_database_urls_from_hosts_are_normalised():
+    from config import normalize_database_url as n
+    assert n("postgres://u:p@h:5432/db") == "postgresql+psycopg://u:p@h:5432/db"
+    assert n(" postgresql://u:p@h/db ") == "postgresql+psycopg://u:p@h/db"
+    assert n("postgresql+psycopg://x") == "postgresql+psycopg://x"
+    assert n("sqlite://") == "sqlite://" and n(None) is None

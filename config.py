@@ -61,13 +61,25 @@ def _bool(name: str, default: bool) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def normalize_database_url(url: str | None) -> str | None:
+    """Accept the connection strings that hosts hand out (postgres:// or postgresql://)
+    and turn them into the form SQLAlchemy needs for the psycopg driver."""
+    if not url:
+        return url
+    url = url.strip()
+    for prefix in ("postgres://", "postgresql://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg://" + url[len(prefix):]
+    return url
+
+
 class Settings:
     def __init__(self) -> None:
         self.environment = (_env("ENVIRONMENT", "development") or "development").lower()
         self.is_production = self.environment == "production"
 
         # Database
-        self.database_url = _env("DATABASE_URL")
+        self.database_url = normalize_database_url(_env("DATABASE_URL"))
 
         # Authentication
         self.jwt_secret: str = _env("JWT_SECRET_KEY") or ""

@@ -1,5 +1,7 @@
 // Falcon Eye API client: token storage, automatic refresh, friendly errors.
-const BASE = '/api';
+// Local and Docker: the web server forwards /api to the backend.
+// Separate hosting (for example Cloudflare + Render): set VITE_API_URL at build time.
+const BASE = ((import.meta.env && import.meta.env.VITE_API_URL) || '/api').replace(/\/+$/, '');
 const TOKEN_KEY = 'falcon_eye_token';
 const REFRESH_WINDOW_MS = 10 * 60 * 1000;
 

@@ -28,6 +28,10 @@ if _is_sqlite:
         # A single shared connection so every session sees the same in-memory DB.
         _engine_args["poolclass"] = StaticPool
 
+if not _is_sqlite and "supabase" in DATABASE_URL:
+    # Supabase requires encrypted connections; its shared pooler also dislikes prepared statements.
+    _engine_args["connect_args"] = {"sslmode": "require", "prepare_threshold": None}
+
 engine = create_engine(DATABASE_URL, **_engine_args)
 
 if _is_sqlite:

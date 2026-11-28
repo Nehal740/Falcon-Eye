@@ -152,7 +152,44 @@ def run_migrations() -> list[int]:
     return applied
 
 
+def lock_down_supabase_api() -> bool:
+    """On Supabase, tables in the public schema can be reached through Supabase's own REST API
+    with the public 'anon' key unless row-level security is on. Falcon Eye talks to the database
+    directly as the owner (which bypasses RLS), so we switch RLS on for every table and remove the
+    API roles' access. Returns True if it ran. Safe to run repeatedly; does nothing elsewhere."""
+    if engine.dialect.name != "postgresql":
+        return False
+    try:
+        with engine.begin() as conn:
+            has_roles = conn.execute(text("SELECT count(*) FROM pg_roles WHERE rolname IN ('anon','authenticated')")).scalar()
+            if not has_roles:
+                return False
+            conn.execute(text("""
+                DO $$
+                DECLARE t record;
+                BEGIN
+                  FOR t IN SELECT tablename FROM pg_tables WHERE schemaname = 'public' LOOP
+                    EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', t.tablename);
+                  END LOOP;
+                  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+                    REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon;
+                    REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM anon;
+                  END IF;
+                  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+                    REVOKE ALL ON ALL TABLES IN SCHEMA public FROM authenticated;
+                    REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM authenticated;
+                  END IF;
+                END $$;
+            """))
+        logger.info("Supabase detected: row-level security enabled and public API access removed.")
+        return True
+    except Exception:  # noqa: BLE001 - never stop start-up because of this
+        logger.exception("Could not lock down the Supabase public API. Run scripts/supabase_lockdown.sql by hand.")
+        return False
+
+
 def init_db() -> None:
     Base.metadata.create_all(bind=engine)
     add_missing_columns()
     run_migrations()
+    lock_down_supabase_api()
