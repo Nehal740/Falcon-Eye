@@ -324,3 +324,7 @@ class VerifyIn(BaseModel):
         if v and any(len(x) > 200 for x in v):
             raise ValueError("Each endpoint must be 200 characters or fewer.")
         return v
+
+
+class NotificationsIn(BaseModel):
+    approval_emails: bool

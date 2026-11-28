@@ -83,7 +83,7 @@ elif r["flagged"]:
 ## Settings
 
 `VERIFY_ENABLED=true|false` (default true) and `VERIFY_SENSITIVITY=standard|strict` (default standard).
-These are server-wide for now. Per-workspace switches and a dashboard panel are future work.
+These are server-wide for now. Results appear on the dashboard in the **AI Security & Trust** panel (counts only, last 7 days). Per-workspace switches are future work.
 
 ## Where this sits in OWASP
 

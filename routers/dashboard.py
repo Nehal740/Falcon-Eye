@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends
@@ -7,7 +8,9 @@ from sqlalchemy.orm import Session
 import approval_service
 from database import get_db
 from deps import WorkspaceContext, require_role
-from models import Agent, ApprovalRequest, AuditLog, FirewallEvent, Policy, aware, iso, utcnow
+from models import (
+    Agent, ApprovalRequest, AuditLog, FirewallEvent, Policy, Verification, aware, iso, utcnow,
+)
 from routers.agents import agent_out
 from routers.events import _approval_map, event_out
 
@@ -142,8 +145,40 @@ def dashboard(ctx: WorkspaceContext = Depends(require_role("viewer")),
         "recent_events": [event_out(e, approvals) for e in recent],
         "agent_activity": agent_activity[:6],
         "alerts": alerts,
+        "trust": _trust_summary(db, wid, now),
         "generated_at": iso(now),
     }
+
+
+def _trust_summary(db: Session, wid: int, now) -> dict:
+    """Numbers for the 'AI Security & Trust' panel (last 7 days). Counts only, never text."""
+    rows = (db.query(Verification).filter(Verification.workspace_id == wid,
+                                          Verification.created_at >= now - timedelta(days=7))
+            .order_by(Verification.created_at.desc(), Verification.id.desc()).limit(2000).all())
+    by_risk = {"LOW": 0, "MEDIUM": 0, "HIGH": 0, "CRITICAL": 0}
+    held = blocked = injections = secrets = unsupported = contradicted = 0
+    for r in rows:
+        by_risk[r.risk_level] = by_risk.get(r.risk_level, 0) + 1
+        held += r.decision == "REQUIRE_APPROVAL"
+        blocked += r.decision == "BLOCK"
+        try:
+            codes = json.loads(r.signal_codes or "[]")
+            counts = json.loads(r.counts or "{}")
+        except ValueError:
+            codes, counts = [], {}
+        injections += any("injection" in c for c in codes)
+        secrets += any(c.startswith(("secret.", "argument_secret.")) for c in codes)
+        unsupported += counts.get("unsupported", 0)
+        contradicted += counts.get("contradicted", 0)
+    recent = [{"verification_id": r.verification_id, "agent_name": r.agent_name, "kind": r.kind,
+               "risk_level": r.risk_level, "decision": r.decision, "status": r.status,
+               "signals": (json.loads(r.signal_codes or "[]") if r.signal_codes else [])[:4],
+               "created_at": iso(r.created_at)}
+              for r in rows if r.risk_level in ("MEDIUM", "HIGH", "CRITICAL")][:5]
+    return {"days": 7, "total": len(rows), "by_risk": by_risk, "held_for_approval": held,
+            "blocked": blocked, "injection_signals": injections, "secret_signals": secrets,
+            "unsupported_claims": unsupported, "contradicted_claims": contradicted,
+            "recent_flagged": recent}
 
 
 def _alerts(db, ctx, now, agents, cards, policies, enabled_policies, pending_rows, last_day):
@@ -184,6 +219,15 @@ def _alerts(db, ctx, now, agents, cards, policies, enabled_policies, pending_row
                        "title": f"{failed} rejected agent key attempt(s) in 24 hours",
                        "message": "Someone used a wrong or revoked key. If a key leaked, "
                                   "rotate it under Agents."})
+
+    critical = (db.query(func.count(Verification.id))
+                .filter(Verification.workspace_id == wid, Verification.risk_level == "CRITICAL",
+                        Verification.created_at >= now - timedelta(hours=24)).scalar() or 0)
+    if critical:
+        alerts.append({"id": "critical_verifications", "severity": "warning", "page": "Overview",
+                       "title": f"{critical} critical output check(s) in the last 24 hours",
+                       "message": "Agent output or tool calls looked dangerous and were blocked. "
+                                  "See the AI Security & Trust panel."})
 
     for agent, card in zip(agents, cards):
         if card["connection_status"] == "no_key":

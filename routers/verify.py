@@ -8,9 +8,10 @@ import json
 from datetime import timedelta
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request
 from sqlalchemy.orm import Session
 
+import approval_notify
 import approval_service
 import audit
 import policy as engine
@@ -46,7 +47,7 @@ def _known_actions(db: Session, agent_pk: int) -> list[dict]:
 
 @router.post("/v1/verify", tags=["Agent API (for your AI agents)"],
              summary="Check an output or tool call before you use it")
-def verify_output(body: VerifyIn, request: Request,
+def verify_output(body: VerifyIn, request: Request, background: BackgroundTasks,
                   ctx: AgentContext = Depends(authenticate_agent),
                   db: Session = Depends(get_db)):
     if not settings.verify_enabled:
@@ -131,6 +132,12 @@ def verify_output(body: VerifyIn, request: Request,
                  target_type="verification", target_id=vid, ip=ip,
                  details={"decision": decision, "risk": result["risk_level"], "signals": codes[:15]})
     db.commit()
+    if approval_id:
+        approval_notify.notify_approvers(
+            db, background, workspace, agent_name=agent.name,
+            action=tool.action if tool else f"verify:{body.kind}",
+            resource=tool.resource if tool else "",
+            reason=f"Held by output verification ({result['risk_level']})")
 
     result.update({
         "verification_id": vid, "event_id": event_id, "approval_id": approval_id,

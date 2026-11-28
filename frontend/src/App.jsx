@@ -112,6 +112,7 @@ function Shell({ me, reloadMe, onLogout }) {
     ws, canWrite, canDecide, go, me: me.user, workspaces, onLogout,
     categories: (categoriesQ.data && categoriesQ.data.items) || [],
     refreshMe: reloadMe,
+    emailAvailable: !!me.email_available,
     refreshPending: pendingQ.reload,
     onWorkspaceDeleted: async () => { await reloadMe(); setWsId(null); go('overview'); },
   };

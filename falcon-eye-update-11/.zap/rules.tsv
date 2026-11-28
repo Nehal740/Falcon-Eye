@@ -1,4 +1,0 @@
-# ZAP baseline rule overrides. Format: <rule id>	<IGNORE|WARN|FAIL>	<comment>
-# Only add a line here after you understand the alert and have written down why.
-10109	IGNORE	Informational only: ZAP noticed this is a single-page app
-10049	IGNORE	Hashed /assets files are public and meant to be cached; the app page itself is served no-cache

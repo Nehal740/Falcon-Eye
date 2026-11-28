@@ -145,6 +145,31 @@ function AuditSection({ ctx }) {
   );
 }
 
+function NotificationsSection({ ctx }) {
+  const { me, refreshMe } = ctx;
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const on = me.notify_approvals !== false;
+  async function toggle() {
+    setBusy(true);
+    try { await api.patch('/auth/notifications', { approval_emails: !on }); toast(!on ? 'Approval emails turned on.' : 'Approval emails turned off.'); await refreshMe(); }
+    catch (x) { toast(friendly(x)); } finally { setBusy(false); }
+  }
+  if (!ctx.canDecide) return null;
+  return (
+    <section className="panel settings-sec">
+      <div className="panel-head"><div><h2>Email alerts</h2><p>Get an email when an AI agent is waiting for approval.</p></div></div>
+      <div className="stack">
+        <label className="check-row">
+          <input type="checkbox" checked={on} disabled={busy} onChange={toggle} />
+          <span>Email me when an approval is waiting <small>(at most one email every 15 minutes per workspace)</small></span>
+        </label>
+        {!ctx.emailAvailable && <Notice tone="warn">Email sending is not set up on this server yet, so no alerts can be sent. See docs/EMAIL.md.</Notice>}
+      </div>
+    </section>
+  );
+}
+
 function AiSection({ ctx }) {
   const { ws } = ctx;
   const [busy, setBusy] = useState(false);
@@ -188,6 +213,7 @@ export default function Settings({ ctx }) {
       <WorkspaceSection ctx={ctx} />
       <MembersSection ctx={ctx} />
       <PasswordSection ctx={ctx} />
+      <NotificationsSection ctx={ctx} />
       {ctx.canWrite && <AiSection ctx={ctx} />}
       {ctx.canWrite && <AuditSection ctx={ctx} />}
       <section className="panel settings-sec">

@@ -57,3 +57,16 @@ Set `EMAIL_LOG_LINKS=true` (development only; the backend refuses it in producti
 
 ## Not included yet
 Emails for new approval requests, workspace invitations and weekly summaries are not built. The email service (`email_service.py`) is ready for them.
+
+
+## Approval alert emails
+
+When an agent needs a human decision (from `/v1/evaluate` or a held `/v1/verify` result), Falcon Eye emails
+the workspace members who can review approvals (owner, admin, member). Viewers are never emailed.
+
+* Each person can turn the emails off in **Settings -> Email alerts**.
+* At most **one email per person per workspace every 15 minutes**, so a busy agent cannot flood an inbox.
+  (The counter is kept in memory, so it resets when the server restarts.)
+* The email shows the agent, action, a shortened resource and note. Secrets are masked and long text is cut.
+  It links to `#/approvals`; the person must still sign in to decide.
+* Nothing is sent if SMTP is not configured. Sending happens in the background and never slows the agent.

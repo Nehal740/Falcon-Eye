@@ -3,10 +3,11 @@
 import json
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Request
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+import approval_notify
 import approval_service
 import audit
 import policy as engine
@@ -59,7 +60,7 @@ def ping(request: Request, ctx: AgentContext = Depends(authenticate_agent),
 
 
 @router.post("/evaluate", summary="Ask the firewall whether an action is allowed")
-def evaluate(body: ActionIn, request: Request,
+def evaluate(body: ActionIn, request: Request, background: BackgroundTasks,
              ctx: AgentContext = Depends(authenticate_agent),
              db: Session = Depends(get_db)):
     agent, workspace = ctx.agent, ctx.workspace
@@ -121,6 +122,10 @@ def evaluate(body: ActionIn, request: Request,
         if prior is None:
             raise
         return _replay(prior, body)
+    if approval_id:
+        approval_notify.notify_approvers(db, background, workspace, agent_name=agent.name,
+                                         action=body.action, resource=body.resource,
+                                         reason=body.reason)
     return _response(event, approval_id)
 
 

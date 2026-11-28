@@ -144,6 +144,41 @@ def password_changed(name: str) -> Rendered:
     return Rendered("Your Falcon Eye password was changed", text, page)
 
 
+def _one_line(value: str, limit: int) -> str:
+    value = " ".join((value or "").split())
+    return value if len(value) <= limit else value[:limit - 1] + "…"
+
+
+def approval_waiting(name: str, workspace: str, agent: str, action: str,
+                     resource: str, reason: str) -> Rendered:
+    """Tell a reviewer that an agent is waiting. Details are shortened and secrets masked."""
+    from verification import redact  # local import: keeps this module light
+    first = (name or "there").split()[0]
+    agent, action = _one_line(redact(agent), 60), _one_line(redact(action), 80)
+    resource, reason = _one_line(redact(resource), 120), _one_line(redact(reason), 200)
+    url = f"{settings.app_base_url}/#/approvals"
+    lines = [f"Hello {first},", "",
+             f"An AI agent in \"{_one_line(workspace, 60)}\" is waiting for a human decision.", "",
+             f"Agent: {agent}", f"Action: {action}"]
+    if resource:
+        lines.append(f"Resource: {resource}")
+    if reason:
+        lines.append(f"Note: {reason}")
+    lines += ["", f"Review it here:\n{url}", "",
+              "The agent stays paused until someone decides.",
+              "You can turn these emails off in Settings.", "", "Falcon Eye - AI Agent Firewall"]
+    detail = (f"<b>Agent:</b> {_e(agent)}<br><b>Action:</b> {_e(action)}"
+              + (f"<br><b>Resource:</b> {_e(resource)}" if resource else "")
+              + (f"<br><b>Note:</b> {_e(reason)}" if reason else ""))
+    page = _layout("An agent is waiting for approval",
+                   [f"Hello {_e(first)}, an AI agent in <b>{_e(_one_line(workspace, 60))}</b> "
+                    "is waiting for a human decision.", detail,
+                    "The agent stays paused until someone decides."],
+                   ("Review the request", url),
+                   "You receive this because you can review approvals. Turn these emails off in Settings.")
+    return Rendered(f"Approval needed: {agent}", "\n".join(lines), page)
+
+
 # --------------------------------------------------------------------------
 # Sending
 # --------------------------------------------------------------------------

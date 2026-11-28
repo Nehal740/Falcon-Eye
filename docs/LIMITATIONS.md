@@ -21,4 +21,4 @@ Ideas for later: Redis rate limiting, email invitations and password reset, two-
 
 ## Output verification
 
-Verification is heuristic. It checks text against evidence the agent supplies; it cannot know facts itself, will miss novel injection wording, and can flag correct text. Settings are server-wide, and there is no dashboard panel yet. See `docs/VERIFICATION.md`.
+Verification is heuristic. It checks text against evidence the agent supplies; it cannot know facts itself, will miss novel injection wording, and can flag correct text. Settings are server-wide. See `docs/VERIFICATION.md`.

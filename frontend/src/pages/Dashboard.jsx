@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { api } from '../api';
 import { useFetch } from '../hooks';
-import { Empty, ErrorBox, Loading, Stat, ReadOnlyNote, fmtDate } from '../components/ui';
+import { Empty, ErrorBox, Loading, Stat, ReadOnlyNote, Status, fmtDate, timeAgo } from '../components/ui';
 import { EventDetail, EventTable } from '../components/EventParts';
 import { ApprovalCard, useDecision } from '../components/ApprovalParts';
 import { Dialog } from '../components/ui';
@@ -37,6 +37,65 @@ function DailyChart({ daily }) {
       </div>
       <div className="legend"><span><i className="seg green" /> Allowed</span><span><i className="seg amber" /> Needs approval</span><span><i className="seg red" /> Blocked</span></div>
     </div>
+  );
+}
+
+const RISK = { LOW: ['Low', 'green'], MEDIUM: ['Medium', 'amber'], HIGH: ['High', 'red'], CRITICAL: ['Critical', 'red'] };
+function RiskPill({ value }) {
+  const [label, tone] = RISK[value] || [value, 'gray'];
+  return <span className={`status ${tone}`}><i />{label} risk</span>;
+}
+
+function TrustPanel({ trust }) {
+  const r = trust.by_risk;
+  const total = Math.max(1, trust.total);
+  const num = (label, value, hint) => (
+    <div className="trust-num" title={hint}><b>{value}</b><span>{label}</span></div>
+  );
+  return (
+    <section className="panel trust-panel" aria-label="AI Security and Trust">
+      <div className="panel-head">
+        <div><h2>AI Security &amp; Trust</h2><p>Checks on agent output and tool calls · last {trust.days} days</p></div>
+        <span className="count-pill">{trust.total}</span>
+      </div>
+      {trust.total === 0 ? (
+        <Empty icon={ShieldCheck} title="No output checks yet"
+          text="Agents can send their answers or tool calls to /v1/verify before using them. Results appear here (counts only, never the text)." />
+      ) : (
+        <>
+          <div className="trust-grid">
+            {num('Held for approval', trust.held_for_approval, 'A person must decide before the agent continues')}
+            {num('Blocked', trust.blocked, 'Dangerous output or tool calls that were stopped')}
+            {num('Injection signals', trust.injection_signals, 'Text that looked like an attempt to steer the agent')}
+            {num('Secret signals', trust.secret_signals, 'Text or arguments that looked like a key or password')}
+            {num('Unsupported claims', trust.unsupported_claims, 'Statements the supplied evidence did not back up')}
+            {num('Contradicted claims', trust.contradicted_claims, 'Statements that conflicted with the evidence')}
+          </div>
+          <div className="risk-bar" role="img"
+            aria-label={`Risk levels: ${r.LOW} low, ${r.MEDIUM} medium, ${r.HIGH} high, ${r.CRITICAL} critical`}>
+            <i className="seg green" style={{ flex: r.LOW }} />
+            <i className="seg amber" style={{ flex: r.MEDIUM }} />
+            <i className="seg red" style={{ flex: r.HIGH + r.CRITICAL }} />
+          </div>
+          <div className="legend">
+            <span><i className="seg green" /> Low {r.LOW}</span><span><i className="seg amber" /> Medium {r.MEDIUM}</span>
+            <span><i className="seg red" /> High {r.HIGH} · Critical {r.CRITICAL}</span>
+            <span className="legend-note">{Math.round((r.LOW / total) * 100)}% clean</span>
+          </div>
+          {trust.recent_flagged.length > 0 && (
+            <ul className="mini-list trust-list">
+              {trust.recent_flagged.map((v) => (
+                <li key={v.verification_id}>
+                  <span><RiskPill value={v.risk_level} /> {v.agent_name || 'Agent'}</span>
+                  <span><Status value={v.decision} /> · {timeAgo(v.created_at)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <small className="soft-note">Heuristic checks against the evidence agents supply. They help, but they are not proof of truth.</small>
+        </>
+      )}
+    </section>
   );
 }
 
@@ -139,6 +198,8 @@ export default function Dashboard({ ctx }) {
           ) : <Empty icon={SlidersHorizontal} title="No policies yet" text="Without a policy every action is blocked." />}
         </div>
       </section>
+
+      {data.trust && <TrustPanel trust={data.trust} />}
 
       <p className="soft-note">Updated {fmtDate(data.generated_at)}</p>
 

@@ -26,3 +26,10 @@ Use **Help** or **Ask Falcon Eye**. The assistant answers from this documentatio
 
 ## Settings
 Rename the workspace, manage members (owners and admins add people who already have an account), change your password (this signs out other devices), and read the audit log (owners and admins).
+
+
+## AI Security & Trust panel and email alerts
+
+* The **Overview** page has an *AI Security & Trust* panel. It counts output checks sent to `/v1/verify`
+  in the last 7 days (held, blocked, injection and secret signals, unsupported claims). It never shows the checked text.
+* **Settings -> Email alerts** turns the "approval waiting" email on or off for you.

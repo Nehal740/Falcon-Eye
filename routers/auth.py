@@ -13,7 +13,8 @@ from errors import AppError
 from models import EmailToken, RevokedToken, User, Workspace, WorkspaceMember, aware, utcnow
 from rate_limiter import limiter
 from schemas import (
-    ChangePasswordIn, ForgotPasswordIn, LoginIn, RegisterIn, ResetPasswordIn, TokenIn,
+    ChangePasswordIn, ForgotPasswordIn, LoginIn, NotificationsIn, RegisterIn, ResetPasswordIn,
+    TokenIn,
 )
 from security import (
     burn_password_check, create_access_token, hash_password, verify_password,
@@ -30,6 +31,7 @@ def user_out(user: User) -> dict:
         "full_name": user.full_name,
         "onboarding_completed": bool(user.onboarding_completed),
         "email_verified": user.email_verified_at is not None,
+        "notify_approvals": bool(user.notify_approvals),
     }
 
 
@@ -241,6 +243,16 @@ def _invalid_link() -> AppError:
         "This link is invalid, has expired or was already used.",
         "Request a new one: use 'Forgot password' on the sign-in page, "
         "or 'Resend confirmation email' inside Falcon Eye.")
+
+
+@router.patch("/notifications", summary="Choose whether to get an email when an approval is waiting")
+def set_notifications(body: NotificationsIn, user: User = Depends(get_current_user),
+                      db: Session = Depends(get_db)):
+    user.notify_approvals = body.approval_emails
+    audit.record(db, "user.notifications_changed", actor_type="user", actor_id=user.id,
+                 actor_label=user.email, details={"approval_emails": body.approval_emails})
+    db.commit()
+    return {"approval_emails": bool(user.notify_approvals)}
 
 
 @router.post("/forgot-password", summary="Email a password reset link")

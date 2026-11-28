@@ -57,6 +57,9 @@ class User(Base):
     onboarding_completed = Column(Boolean, nullable=False, default=False,
                                   server_default=expression.false())
     email_verified_at = Column(DateTime(timezone=True))
+    # Email me when an approval is waiting (members, admins and owners can turn it off)
+    notify_approvals = Column(Boolean, nullable=False, default=True,
+                              server_default=expression.true())
 
 
 class Workspace(Base):
